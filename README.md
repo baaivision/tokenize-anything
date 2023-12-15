@@ -7,7 +7,7 @@
 <sup>1</sup>[ICT-CAS](http://english.ict.cas.cn/), &nbsp; <sup>2</sup>[BAAI](https://www.baai.ac.cn/english.html)<br>
 <sup>*</sup> Equal Contribution, <sup>¶</sup>Project Lead
 
-[[`Paper`]()] [[`🤗 Demo`](https://huggingface.co/spaces/BAAI/tokenize-anything)]
+[[`Paper`](https://arxiv.org/pdf/2312.09128.pdf)] [[`🤗 Demo`](https://huggingface.co/spaces/BAAI/tokenize-anything)]
 <br><br><image src="assets/model_overview.png"/>
 
 </div>
@@ -102,7 +102,7 @@ Two versions of the model are available with different image encoders.
 @article{pan2023tap,
   title={Tokenize Anything via Prompting},
   author={Pan, Ting and Tang, Lulu and Wang, Xinlong and Shan, Shiguang},
-  journal={arXiv preprint arXiv:2312.yyyyy},
+  journal={arXiv preprint arXiv:2312.09128},
   year={2023}
 }
 ```
