@@ -18,7 +18,7 @@ We present **T**okenize **A**nything via **P**rompting, a unified and promptable
 
 ### Preliminaries
 
-``torch``      >= 2.0.0
+``torch``
 
 ``flash-attn`` >= 2.3.3 (Install the pre-built wheel distribution from [URL](https://github.com/Dao-AILab/flash-attention/releases))
 

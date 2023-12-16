@@ -112,8 +112,8 @@ setuptools.setup(
         "Pillow>=7.1",
         "gradio-image-prompter",
         "sentencepiece",
-        "torch>=2.0.0",
-        "flash-attn>=2.3.3",
+        "torch",
+        "flash-attn",
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
