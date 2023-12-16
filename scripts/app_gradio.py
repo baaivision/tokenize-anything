@@ -138,15 +138,16 @@ class ServingCommand(object):
 
 def build_gradio_app(queues, command):
     """Build the gradio application."""
-    import cv2
     import gradio as gr
     import gradio_image_prompter as gr_ext
 
     title = "Tokenize Anything"
     header = (
         "<div align='center'>"
-        f"<h1>{title}</h1>"
-        "<h3>A promptable model capable of simultaneously segmenting, recognizing and captioning</h3>"  # noqa
+        "<h1>Tokenize Anything via Prompting</h1>"
+        "<h3><a href='https://arxiv.org/abs/2312.09128' target='_blank' rel='noopener'>[paper]</a>"
+        "<a href='https://github.com/baaivision/tokenize-anything' target='_blank' rel='noopener'>[code]</a></h3>"  # noqa
+        "<h3>A promptable model capable of simultaneous segmentation, recognition and caption.</h3>"  # noqa
         "</div>"
     )
     theme = "soft"
@@ -170,10 +171,10 @@ def build_gradio_app(queues, command):
         anno_img = gr.AnnotatedImage(None)
         return click_img, draw_img, anno_img
 
-    def on_submit_btn(click_img, mask_img, prompt, multipoint):
+    def on_submit_btn(click_img, draw_img, prompt, multipoint):
         if prompt == 0:
-            img = cv2.imread(click_img["image"])
-            points = np.array(click_img["points"]).reshape((-1, 2, 3))
+            img, points = click_img["image"], click_img["points"]
+            points = np.array(points).reshape((-1, 2, 3))
             if multipoint == 1:
                 points = points.reshape((-1, 3))
                 lt = points[np.where(points[:, 2] == 2)[0]][None, :, :]
@@ -182,15 +183,18 @@ def build_gradio_app(queues, command):
                 points = [lt, rb, poly] if len(lt) > 0 else [poly, np.array([[[0, 0, 4]]])]
                 points = np.concatenate(points, axis=1)
         elif prompt == 1:
-            img, points = mask_img["background"][:, :, (2, 1, 0)], []
-            for layer in mask_img["layers"]:
+            img, points = draw_img["background"], []
+            for layer in draw_img["layers"]:
                 ys, xs = np.nonzero(layer[:, :, 0])
-                keep = np.linspace(0, ys.shape[0], 11, dtype="int64")[1:-1]
-                points.append(np.stack([xs[keep][None, :], ys[keep][None, :]], 2))
-            points = np.concatenate(points).astype("float32")
-            points = np.pad(points, [(0, 0), (0, 0), (0, 1)], constant_values=1)
-            pad_points = np.array([[[0, 0, 4]]], "float32").repeat(points.shape[0], 0)
-            points = np.concatenate([points, pad_points], axis=1)
+                if len(ys) > 0:
+                    keep = np.linspace(0, ys.shape[0], 11, dtype="int64")[1:-1]
+                    points.append(np.stack([xs[keep][None, :], ys[keep][None, :]], 2))
+            if len(points) > 0:
+                points = np.concatenate(points).astype("float32")
+                points = np.pad(points, [(0, 0), (0, 0), (0, 1)], constant_values=1)
+                pad_points = np.array([[[0, 0, 4]]], "float32").repeat(points.shape[0], 0)
+                points = np.concatenate([points, pad_points], axis=1)
+        img = img[:, :, (2, 1, 0)] if img is not None else img
         img = np.zeros((480, 640, 3), dtype="uint8") if img is None else img
         points = (np.array([[[0, 0, 4]]]) if len(points) == 0 else points).astype("float32")
         inputs = {"img": img, "points": points}
@@ -207,8 +211,8 @@ def build_gradio_app(queues, command):
     app = gr.Blocks(title=title, theme=theme, css=css).__enter__()
     gr.Markdown(header)
     container, column = gr.Row().__enter__(), gr.Column().__enter__()
-    click_img = gr_ext.ImagePrompter(type="filepath", show_label=False)
-    draw_img = gr.ImageEditor(type="numpy", show_label=False, visible=False)
+    click_img = gr_ext.ImagePrompter(show_label=False)
+    draw_img = gr.ImageEditor(show_label=False, visible=False)
     interactions = "LeftClick (FG) | MiddleClick (BG) | PressMove (Box) | Draw (Sketch)"
     gr.Markdown("<h3 style='text-align: center'>[🖱️ | 🖐️]: 🌟🌟 {} 🌟🌟 </h3>".format(interactions))
     row = gr.Row().__enter__()
