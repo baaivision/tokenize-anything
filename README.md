@@ -90,8 +90,8 @@ Two versions of the model are available with different image encoders.
 | Concept | Description | Weights |
 | ------- | ------------| ------ |
 | **Merged-2560** | Merged concepts | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/concepts/merged_2560.pkl) |
-| **LVIS-1203**   | LVIS concepts | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/lvis_1203.pkl) |
-| **COCO-80**   | COCO concepts  | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/coco_80.pkl) |
+| **LVIS-1203**   | LVIS concepts | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/concepts/lvis_1203.pkl) |
+| **COCO-80**   | COCO concepts  | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/concepts/coco_80.pkl) |
 
 ## License
 [Apache License 2.0](LICENSE)
