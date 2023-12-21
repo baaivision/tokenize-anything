@@ -29,7 +29,7 @@ We present **T**okenize **A**nything via **P**rompting, a unified and promptable
 Clone this repository to local disk and install:
 
 ```bash
-cd tokenize-anything && pip instsall .
+cd tokenize-anything && pip install .
 ```
 
 You can also install from the remote repository: 

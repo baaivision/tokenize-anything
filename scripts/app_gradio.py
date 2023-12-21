@@ -86,21 +86,21 @@ class Predictor(object):
         mask_index = np.arange(rank_scores.shape[0]), rank_scores.argmax(1)
         iou_scores = outputs["iou_pred"][mask_index].cpu().numpy().reshape(batch_shape)
         # Upscale masks to the original image resolution.
-        mask_pred = outputs["mask_pred"][mask_index][:, None]
+        mask_pred = outputs["mask_pred"][mask_index].unsqueeze_(1)
         mask_pred = self.model.upscale_masks(mask_pred, im_batch.shape[1:-1])
         mask_pred = mask_pred.view(batch_shape + mask_pred.shape[2:])
         # Predict concepts.
         concepts, scores = self.model.predict_concept(outputs["sem_embeds"][mask_index])
         concepts, scores = [x.reshape(batch_shape) for x in (concepts, scores)]
         # Generate captions.
-        sem_tokens = outputs["sem_tokens"][mask_index][:, None, :]
+        sem_tokens = outputs["sem_tokens"][mask_index].unsqueeze_(1)
         captions = self.model.generate_text(sem_tokens).reshape(batch_shape)
         # Postprecess results.
         results = []
         for i in range(batch_shape[0]):
             pred_h, pred_w = im_info[i, :2].astype("int")
             masks = mask_pred[i : i + 1, :, :pred_h, :pred_w]
-            masks = self.model.upscale_masks(masks, imgs[i].shape[:2])[0]
+            masks = self.model.upscale_masks(masks, imgs[i].shape[:2]).flatten(0, 1)
             results.append(
                 {
                     "scores": np.stack([iou_scores[i], scores[i]], axis=-1),
@@ -154,25 +154,20 @@ def build_gradio_app(queues, command):
     css = """#anno-img .mask {opacity: 0.5; transition: all 0.2s ease-in-out;}
              #anno-img .mask.active {opacity: 0.7}"""
 
-    def get_examples():
-        assets_dir = os.path.join(os.path.dirname(__file__), "../assets")
+    def get_click_examples():
+        assets_dir = os.path.join(os.path.dirname(__file__), "assets")
         app_images = list(filter(lambda x: x.startswith("app_image"), os.listdir(assets_dir)))
         app_images.sort()
         return [{"image": os.path.join(assets_dir, x)} for x in app_images]
-
-    def on_prompt_opt(index):
-        click_img = gr.Image(None, visible=index == 0)
-        draw_img = gr.ImageEditor(None, visible=index != 0)
-        anno_img = gr.AnnotatedImage(None)
-        return click_img, draw_img, anno_img
 
     def on_reset_btn():
         click_img, draw_img = gr.Image(None), gr.ImageEditor(None)
         anno_img = gr.AnnotatedImage(None)
         return click_img, draw_img, anno_img
 
-    def on_submit_btn(click_img, draw_img, prompt, multipoint):
-        if prompt == 0:
+    def on_submit_btn(click_img, mask_img, prompt, multipoint):
+        img, points = None, np.array([[[0, 0, 4]]])
+        if prompt == 0 and click_img is not None:
             img, points = click_img["image"], click_img["points"]
             points = np.array(points).reshape((-1, 2, 3))
             if multipoint == 1:
@@ -182,9 +177,9 @@ def build_gradio_app(queues, command):
                 poly = points[np.where(points[:, 2] <= 1)[0]][None, :, :]
                 points = [lt, rb, poly] if len(lt) > 0 else [poly, np.array([[[0, 0, 4]]])]
                 points = np.concatenate(points, axis=1)
-        elif prompt == 1:
-            img, points = draw_img["background"], []
-            for layer in draw_img["layers"]:
+        elif prompt == 1 and mask_img is not None:
+            img, points = mask_img["background"], []
+            for layer in mask_img["layers"]:
                 ys, xs = np.nonzero(layer[:, :, 0])
                 if len(ys) > 0:
                     keep = np.linspace(0, ys.shape[0], 11, dtype="int64")[1:-1]
@@ -196,8 +191,8 @@ def build_gradio_app(queues, command):
                 points = np.concatenate([points, pad_points], axis=1)
         img = img[:, :, (2, 1, 0)] if img is not None else img
         img = np.zeros((480, 640, 3), dtype="uint8") if img is None else img
-        points = (np.array([[[0, 0, 4]]]) if len(points) == 0 else points).astype("float32")
-        inputs = {"img": img, "points": points}
+        points = np.array([[[0, 0, 4]]]) if (len(points) == 0 or points.size == 0) else points
+        inputs = {"img": img, "points": points.astype("float32")}
         with command.output_index.get_lock():
             command.output_index.value += 1
             img_id = command.output_index.value
@@ -208,25 +203,23 @@ def build_gradio_app(queues, command):
         annotations = [(x, y) for x, y in zip(masks, texts)]
         return inputs["img"][:, :, ::-1], annotations
 
-    app = gr.Blocks(title=title, theme=theme, css=css).__enter__()
-    gr.Markdown(header)
+    app, _ = gr.Blocks(title=title, theme=theme, css=css).__enter__(), gr.Markdown(header)
     container, column = gr.Row().__enter__(), gr.Column().__enter__()
-    click_img = gr_ext.ImagePrompter(show_label=False)
-    draw_img = gr.ImageEditor(show_label=False, visible=False)
-    interactions = "LeftClick (FG) | MiddleClick (BG) | PressMove (Box) | Draw (Sketch)"
+    click_tab, click_img = gr.Tab("Point+Box").__enter__(), gr_ext.ImagePrompter(show_label=False)
+    interactions = "LeftClick (FG) | MiddleClick (BG) | PressMove (Box)"
     gr.Markdown("<h3 style='text-align: center'>[🖱️ | 🖐️]: 🌟🌟 {} 🌟🌟 </h3>".format(interactions))
-    row = gr.Row().__enter__()
-    prompt_opt = gr.Radio(["Point+Box", "Sketch"], label="Prompt", type="index", value="Point+Box")
     point_opt = gr.Radio(["Batch", "Ensemble"], label="Multipoint", type="index", value="Batch")
-    _, row = row.__exit__(), gr.Row().__enter__()
-    reset_btn, submit_btn = gr.Button("Reset"), gr.Button("Execute")
-    _, row = row.__exit__(), gr.Row().__enter__()
-    gr.Examples(get_examples(), inputs=[click_img], label="Examples (for Point+Box only)")
+    gr.Examples(get_click_examples(), inputs=[click_img])
+    _, draw_tab = click_tab.__exit__(), gr.Tab("Sketch").__enter__()
+    draw_img, _ = gr.ImageEditor(show_label=False), draw_tab.__exit__()
+    prompt_opt = gr.Radio(["Click", "Draw"], type="index", visible=False, value="Click")
+    row, reset_btn, submit_btn = gr.Row().__enter__(), gr.Button("Reset"), gr.Button("Execute")
     _, _, column = row.__exit__(), column.__exit__(), gr.Column().__enter__()
     anno_img = gr.AnnotatedImage(elem_id="anno-img", show_label=False)
     reset_btn.click(on_reset_btn, [], [click_img, draw_img, anno_img])
     submit_btn.click(on_submit_btn, [click_img, draw_img, prompt_opt, point_opt], [anno_img])
-    prompt_opt.change(on_prompt_opt, [prompt_opt], [click_img, draw_img, anno_img])
+    click_tab.select(lambda: "Click", [], [prompt_opt])
+    draw_tab.select(lambda: "Draw", [], [prompt_opt])
     column.__exit__(), container.__exit__(), app.__exit__()
     return app
 
