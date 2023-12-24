@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------
-"""Evalute bare segmentation using detection boxes."""
+"""Evaluate bare segmentation using detection boxes."""
 
 import argparse
 import collections
