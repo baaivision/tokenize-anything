@@ -93,6 +93,10 @@ Two versions of the model are available with different image encoders.
 | **LVIS-1203**   | LVIS concepts | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/concepts/lvis_1203.pkl) |
 | **COCO-80**   | COCO concepts  | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/concepts/coco_80.pkl) |
 
+## Contact
+- **We are looking** for research interns at BAAI Vision Team.
+If you are interested in working with us on **Vision Foundation Models** (e.g., SAM variants), please contact [Xinlong Wang](https://www.xloong.wang/) (`wangxinlong@baai.ac.cn`).
+
 ## License
 [Apache License 2.0](LICENSE)
 

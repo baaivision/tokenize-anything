@@ -95,7 +95,7 @@ class Predictor(object):
         # Generate captions.
         sem_tokens = outputs["sem_tokens"][mask_index].unsqueeze_(1)
         captions = self.model.generate_text(sem_tokens).reshape(batch_shape)
-        # Postprecess results.
+        # Postprocess results.
         results = []
         for i in range(batch_shape[0]):
             pred_h, pred_w = im_info[i, :2].astype("int")
