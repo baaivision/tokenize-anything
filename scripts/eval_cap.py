@@ -31,10 +31,10 @@ from pycocoevalcap.rouge.rouge import Rouge
 from pycocoevalcap.tokenizer.ptbtokenizer import PTBTokenizer
 import torch
 
-from tokenize_anything import test_engine
+from tokenize_anything import engine
 from tokenize_anything.utils.image import im_rescale
 from tokenize_anything.utils.image import im_vstack
-from tokenize_anything.utils.timer import Timer
+from tokenize_anything.utils.profiler import Timer
 
 
 def parse_args():
@@ -125,7 +125,7 @@ def main(args):
     read_every = int(np.ceil(args.read_every / num_devices) * num_devices)
     queues = [mp.Queue() for _ in range(num_devices + 1)]
     commands = [
-        test_engine.InferenceCommand(
+        engine.InferenceCommand(
             queues[i],
             queues[-1],
             kwargs={

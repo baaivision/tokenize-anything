@@ -76,7 +76,6 @@ class Block(nn.Module):
         num_heads=8,
         attn_ratio=0.5,
         mlp_dim=2048,
-        dropout=0.1,
         activation_type="ReLU",
         skip_first_query_pos=False,
     ):
@@ -89,7 +88,7 @@ class Block(nn.Module):
         self.norm3 = nn.LayerNorm(dim)
         self.cross_attn_image_to_token = Attention(dim, num_heads, attn_ratio)
         self.norm4 = nn.LayerNorm(dim)
-        self.dropout = nn.Dropout(dropout, inplace=True)
+        self.dropout = nn.Dropout(0.1, inplace=True)
         self.skip_first_query_pos = skip_first_query_pos
 
     def forward(self, query, key, query_pos, key_pos):
@@ -115,7 +114,6 @@ class Transformer(nn.Module):
         num_heads=8,
         attn_ratio=0.5,
         mlp_dim=2048,
-        dropout=0.1,
         activation_type="ReLU",
         depth=2,
     ):
@@ -126,7 +124,6 @@ class Transformer(nn.Module):
                 num_heads,
                 attn_ratio=attn_ratio,
                 mlp_dim=mlp_dim,
-                dropout=dropout,
                 activation_type=activation_type,
                 skip_first_query_pos=i == 0,
             )
@@ -134,7 +131,7 @@ class Transformer(nn.Module):
         )
         self.final_attn_token_to_image = Attention(embed_dim, num_heads, attn_ratio)
         self.norm = nn.LayerNorm(embed_dim)
-        self.dropout = nn.Dropout(dropout, inplace=True)
+        self.dropout = nn.Dropout(0.1, inplace=True)
 
     def forward(self, query, key, query_pos, key_pos):
         for blk in self.blocks:

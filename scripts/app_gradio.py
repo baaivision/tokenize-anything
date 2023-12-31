@@ -23,7 +23,7 @@ import time
 import numpy as np
 import torch
 
-from tokenize_anything import test_engine
+from tokenize_anything import engine
 from tokenize_anything.utils.image import im_rescale
 from tokenize_anything.utils.image import im_vstack
 
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     args = parse_args()
     queues = [mp.Queue(1024) for _ in range(len(args.device) + 1)]
     commands = [
-        test_engine.InferenceCommand(
+        engine.InferenceCommand(
             queues[i],
             queues[-1],
             kwargs={

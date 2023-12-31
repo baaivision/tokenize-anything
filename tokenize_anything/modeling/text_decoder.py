@@ -79,6 +79,7 @@ class TransformerCache(nn.Module):
         cache_v = self.cache_dict.get(f"{id(mixer)}_v", None)
         flash_args = {"softmax_scale": mixer.scale, "causal": True}
         if cache_k is None or cache_v is None:
+            flash_args["dropout_p"] = mixer.dropout.p if mixer.training else 0
             return flash_attn_func(q, k, v, **flash_args)
         flash_args["cache_seqlens"] = self.cache_dict["seq_lens"][: q.shape[0]]
         return flash_attn_with_kvcache(q, cache_k, cache_v, k, v, **flash_args)
@@ -94,6 +95,7 @@ class Attention(nn.Module):
         self.head_dim = dim // num_heads
         self.num_heads = num_heads
         self.scale = self.head_dim**-0.5
+        self.dropout = nn.Dropout(0.1, inplace=False)
         self.cache = nn.Module()
 
     def forward(self, x):
@@ -126,10 +128,11 @@ class Block(nn.Module):
         self.mlp = MLP(dim, mlp_dim, bias=bias)
         self.norm1 = nn.LayerNorm(dim)
         self.norm2 = nn.LayerNorm(dim)
+        self.dropout = nn.Dropout(0.1, inplace=True)
 
     def forward(self, x):
-        x = self.attn(self.norm1(x)).add_(x)
-        return self.mlp(self.norm2(x)).add_(x)
+        x = self.dropout(self.attn(self.norm1(x))).add_(x)
+        return self.dropout(self.mlp(self.norm2(x))).add_(x)
 
 
 class Transformer(nn.Module):

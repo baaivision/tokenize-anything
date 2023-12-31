@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------
-"""Build model."""
+"""Easy model builder."""
 
 from functools import partial
 import pickle

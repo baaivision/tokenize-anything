@@ -177,7 +177,7 @@ class ImageTokenizer(nn.Module):
             An array of generated texts.
 
         """
-        max_gen_len = max_gen_len or self.text_decoder.max_seq_len
+        max_gen_len = max_gen_len or self.text_decoder.max_text_len
         prompts = self.text_decoder.get_prompts(visual_tokens)
         out_shape = (prompts.size(0), self.text_decoder.max_text_len)
         tokens = np.full(out_shape, self.text_tokenizer.pad_id, "int64")

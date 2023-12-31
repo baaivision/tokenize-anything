@@ -17,7 +17,7 @@
 
 import time
 
-from tokenize_anything.build_model import model_registry
+from tokenize_anything.models import model_registry
 
 
 class InferenceCommand(object):

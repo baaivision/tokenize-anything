@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------
-"""Tokenize Anything via Prompting."""
+"""Models."""
 
-from tokenize_anything.models import model_registry
-from tokenize_anything.version import __version__
+from tokenize_anything.models.easy_build import model_registry

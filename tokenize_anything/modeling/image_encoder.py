@@ -17,6 +17,13 @@
 import torch
 from torch import nn
 
+try:
+    import timm
+
+    DropPath = getattr(timm, "layers", getattr(timm.models, "layers")).DropPath
+except ImportError:
+    DropPath = nn.Identity()
+
 
 def space_to_depth(input, block_size):
     """Rearrange blocks of spatial data into depth."""
@@ -84,10 +91,11 @@ class Block(nn.Module):
         self.attn = Attention(dim, num_heads, qkv_bias=qkv_bias)
         self.norm2 = nn.LayerNorm(dim)
         self.mlp = MLP(dim, mlp_ratio=mlp_ratio)
+        self.drop_path = DropPath()
 
     def forward(self, x):
-        x = self.attn(self.norm1(x)).add_(x)
-        return self.mlp(self.norm2(x)).add_(x)
+        x = self.drop_path(self.attn(self.norm1(x))).add_(x)
+        return self.drop_path(self.mlp(self.norm2(x))).add_(x)
 
 
 class Bottleneck(nn.Module):
