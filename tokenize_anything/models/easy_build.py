@@ -40,7 +40,7 @@ def get_device(device_index):
 def load_weights(module, weights_file, strict=True):
     """Load a weights file."""
     if not weights_file:
-        return module._IncompatibleKeys([], [])
+        return
     if weights_file.endswith(".pkl"):
         with open(weights_file, "rb") as f:
             state_dict = pickle.load(f)
@@ -48,7 +48,7 @@ def load_weights(module, weights_file, strict=True):
                 state_dict[k] = torch.from_numpy(v) if isinstance(v, np.ndarray) else v
     else:
         state_dict = torch.load(weights_file)
-    return module.load_state_dict(state_dict, strict=strict)
+    module.load_state_dict(state_dict, strict=strict)
 
 
 def vit_encoder(depth, embed_dim, num_heads, out_dim, image_size):

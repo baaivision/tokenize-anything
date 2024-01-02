@@ -17,12 +17,7 @@
 import torch
 from torch import nn
 
-try:
-    import timm
-
-    DropPath = getattr(timm, "layers", getattr(timm.models, "layers")).DropPath
-except ImportError:
-    DropPath = nn.Identity()
+from tokenize_anything import layers
 
 
 def space_to_depth(input, block_size):
@@ -91,7 +86,7 @@ class Block(nn.Module):
         self.attn = Attention(dim, num_heads, qkv_bias=qkv_bias)
         self.norm2 = nn.LayerNorm(dim)
         self.mlp = MLP(dim, mlp_ratio=mlp_ratio)
-        self.drop_path = DropPath()
+        self.drop_path = layers.DropPath(0.1, inplace=True)
 
     def forward(self, x):
         x = self.drop_path(self.attn(self.norm1(x))).add_(x)
