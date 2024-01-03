@@ -51,11 +51,11 @@ class ConceptProjector(nn.Module):
             proj = proj.to(device=embeds.device)
         return embeds, proj
 
-    def encode_src(self, src_embeds):
+    def encode_src(self, src_embeds, logpi=True):
         """Encode source visual embedding via concept projection."""
         src_embeds, self.src_weights = self.maybe_convert(src_embeds, self.src_weights)
         logits = nn.functional.normalize(src_embeds, dim=-1) @ self.src_weights
-        return nn.functional.log_softmax(logits, dim=-1)
+        return nn.functional.log_softmax(logits, dim=-1) if logpi else logits
 
     def encode_tgt(self, tgt_embeds):
         """Encode target visual embedding via concept projection."""

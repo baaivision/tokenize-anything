@@ -248,7 +248,7 @@ class ImageEncoderViT(nn.Module):
             if i in self.cross_indices or i == len(self.blocks) - 1:
                 x = self.norm(x) if i == len(self.blocks) - 1 else x
                 x = depth_to_space(x.reshape(wmsa_shape), self.window_size)
-                x = x.permute(0, 3, 1, 2)
+                x = x.permute(0, 3, 1, 2).contiguous()
             if i in self.cross_indices:
                 x = self.cross_conv[self.cross_indices.index(i)](x)
             if i in self.cross_indices and i < len(self.blocks) - 1:
