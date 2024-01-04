@@ -30,7 +30,7 @@ class DropPath(nn.Module):
         if not self.training or self.p <= 0:
             return input
         keep_p = 1 - self.p
-        shape = (input.shape[0],) + (1,) * (input.ndim - 1)
+        shape = (input.shape[0],) + (1,) * (input.dim() - 1)
         scale = input.new_empty(shape).bernoulli_(keep_p).div_(keep_p)
         return input.mul_(scale) if self.inplace else input.mul(scale)
 

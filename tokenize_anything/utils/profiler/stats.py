@@ -9,18 +9,34 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, esither express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------
-"""Layers."""
+"""Trackable statistics."""
 
-from tokenize_anything.layers.drop import DropPath
-from tokenize_anything.layers.loss import BinaryDiceLoss
-from tokenize_anything.layers.loss import BinaryFocalLoss
-from tokenize_anything.layers.loss import CrossEntropyLoss
-from tokenize_anything.layers.utils import init_cross_conv
-from tokenize_anything.layers.utils import resize_pos_embed
-from tokenize_anything.layers.utils import set_dropout
-from tokenize_anything.layers.utils import set_drop_path
-from tokenize_anything.layers.utils import set_sync_batch_norm
+import collections
+import numpy as np
+
+
+class SmoothedValue(object):
+    """Track values and provide smoothed report."""
+
+    def __init__(self, window_size=None):
+        self.deque = collections.deque(maxlen=window_size)
+        self.total = 0.0
+        self.count = 0
+
+    def update(self, value):
+        self.deque.append(value)
+        self.count += 1
+        self.total += value
+
+    def mean(self):
+        return np.mean(self.deque)
+
+    def median(self):
+        return np.median(self.deque)
+
+    def average(self):
+        return self.total / self.count

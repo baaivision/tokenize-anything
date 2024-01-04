@@ -9,13 +9,14 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, esither express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------
 """Timing functions."""
 
 import contextlib
+import datetime
 import time
 
 
@@ -49,3 +50,13 @@ class Timer(object):
     def toc(self, n=1, average=True):
         self.diff = time.time() - self.start_time
         return self.add_diff(self.diff, n, average)
+
+
+def get_progress(timer, step, max_steps):
+    """Return the progress information."""
+    eta_seconds = timer.average_time * (max_steps - step)
+    eta = str(datetime.timedelta(seconds=int(eta_seconds)))
+    progress = (step + 1.0) / max_steps
+    return "< PROGRESS: {:.2%} | SPEED: {:.3f}s / iter | ETA: {} >".format(
+        progress, timer.average_time, eta
+    )

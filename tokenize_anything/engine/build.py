@@ -13,14 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------
-"""Layers."""
+"""Build for engine."""
 
-from tokenize_anything.layers.drop import DropPath
-from tokenize_anything.layers.loss import BinaryDiceLoss
-from tokenize_anything.layers.loss import BinaryFocalLoss
-from tokenize_anything.layers.loss import CrossEntropyLoss
-from tokenize_anything.layers.utils import init_cross_conv
-from tokenize_anything.layers.utils import resize_pos_embed
-from tokenize_anything.layers.utils import set_dropout
-from tokenize_anything.layers.utils import set_drop_path
-from tokenize_anything.layers.utils import set_sync_batch_norm
+
+def build_tensorboard(log_dir):
+    """Build the tensorboard."""
+    from tokenize_anything.utils.tensorboard import TensorBoard
+
+    if TensorBoard.is_available():
+        return TensorBoard(log_dir)
+    return None
