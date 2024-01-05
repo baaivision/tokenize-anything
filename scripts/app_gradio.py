@@ -30,12 +30,12 @@ from tokenize_anything.utils.image import im_vstack
 
 def parse_args():
     """Parse arguments."""
-    parser = argparse.ArgumentParser(description="Launch gradio app.")
-    parser.add_argument("--model-type", type=str, required=True, help="Model type.")
-    parser.add_argument("--checkpoint", type=str, required=True, help="Model checkpoint.")
-    parser.add_argument("--concept", type=str, required=True, help="Concept weights.")
-    parser.add_argument("--device", nargs="+", type=int, default=[0], help="Index of devices.")
-    parser.add_argument("--port", type=int, default=2030, help="Server port.")
+    parser = argparse.ArgumentParser(description="Launch gradio application")
+    parser.add_argument("--model-type", type=str, required=True, help="Model type")
+    parser.add_argument("--checkpoint", type=str, required=True, help="Model checkpoint")
+    parser.add_argument("--concept", type=str, required=True, help="Concept weights")
+    parser.add_argument("--device", nargs="+", type=int, default=[0], help="Index of devices")
+    parser.add_argument("--port", type=int, default=2030, help="Server port")
     return parser.parse_args()
 
 

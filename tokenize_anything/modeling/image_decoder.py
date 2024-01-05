@@ -199,7 +199,7 @@ class ImageDecoder(nn.Module):
         query, key = self.transformer(query, key, query, inputs["img_pos"])
         # Upscale key.
         key = key.transpose(1, 2).view((-1, self.embed_dim) + img_embed_size)
-        output_masks = self.output_conv(key).flatten(2)
+        mask_embeds = self.output_conv(key).flatten(2)
         # Unpack query.
         tokens = query[:, :num_tokens].unbind(dim=1)
         iou_tokens = tokens[num_tokens - self.num_mask_tokens - 1]
@@ -207,7 +207,7 @@ class ImageDecoder(nn.Module):
         sem_tokens = tokens[: self.num_mask_tokens]
         # Predict.
         mask_pred = [f(x) for f, x in zip(self.mask_pred, mask_tokens)]
-        mask_pred = torch.stack(mask_pred, dim=1) @ output_masks
+        mask_pred = torch.stack(mask_pred, dim=1) @ mask_embeds
         mask_pred_size = list(4 * embed_size for embed_size in img_embed_size)
         mask_pred = mask_pred.view([-1, self.num_mask_tokens] + mask_pred_size)
         outputs = {"iou_pred": self.iou_pred(iou_tokens), "mask_pred": mask_pred}

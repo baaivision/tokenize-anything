@@ -35,15 +35,15 @@ from tokenize_anything.utils.profiler import Timer
 
 def parse_args():
     """Parse arguments."""
-    parser = argparse.ArgumentParser(description="Evaluate bare segmentation.")
-    parser.add_argument("--model-type", type=str, required=True, help="Model type.")
-    parser.add_argument("--checkpoint", type=str, required=True, help="Model checkpoint.")
-    parser.add_argument("--images-dir", type=str, required=True, help="Path of images folder.")
-    parser.add_argument("--det-json-file", type=str, required=True, help="Detection json file.")
-    parser.add_argument("--gt-json-file", type=str, required=True, help="Ground-truth json file.")
+    parser = argparse.ArgumentParser(description="Evaluate bare segmentation")
+    parser.add_argument("--model-type", type=str, required=True, help="Model type")
+    parser.add_argument("--checkpoint", type=str, required=True, help="Model checkpoint")
+    parser.add_argument("--images-dir", type=str, required=True, help="Path of images folder")
+    parser.add_argument("--det-json-file", type=str, required=True, help="Detection json file")
+    parser.add_argument("--gt-json-file", type=str, required=True, help="Ground-truth json file")
     parser.add_argument("--read-every", type=int, default=100, help="Read every-n images")
     parser.add_argument("--prompt-size", type=int, default=256, help="Maximum prompts per batch")
-    parser.add_argument("--device", nargs="+", type=int, default=[0], help="Index of devices.")
+    parser.add_argument("--device", nargs="+", type=int, default=[0], help="Index of devices")
     return parser.parse_args()
 
 

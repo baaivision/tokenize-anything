@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------
-"""Evalute bare classification using ground-truth boxes."""
+"""Evaluate bare classification using ground-truth boxes."""
 
 import argparse
 import collections
@@ -35,16 +35,16 @@ from tokenize_anything.utils.profiler import Timer
 
 def parse_args():
     """Parse arguments."""
-    parser = argparse.ArgumentParser(description="Evaluate bare segmentation.")
-    parser.add_argument("--model-type", type=str, required=True, help="Model type.")
-    parser.add_argument("--checkpoint", type=str, required=True, help="Model checkpoint.")
-    parser.add_argument("--concept", type=str, required=True, help="Concept weights.")
-    parser.add_argument("--images-dir", type=str, required=True, help="Path of images folder.")
-    parser.add_argument("--gt-json-file", type=str, required=True, help="Ground-truth json file.")
-    parser.add_argument("--max-dets", type=int, default=300, help="Maximum detections per images.")
+    parser = argparse.ArgumentParser(description="Evaluate bare classification")
+    parser.add_argument("--model-type", type=str, required=True, help="Model type")
+    parser.add_argument("--checkpoint", type=str, required=True, help="Model checkpoint")
+    parser.add_argument("--concept", type=str, required=True, help="Concept weights")
+    parser.add_argument("--images-dir", type=str, required=True, help="Path of images folder")
+    parser.add_argument("--gt-json-file", type=str, required=True, help="Ground-truth json file")
+    parser.add_argument("--max-dets", type=int, default=300, help="Maximum detections per images")
     parser.add_argument("--read-every", type=int, default=100, help="Read every-n images")
     parser.add_argument("--prompt-size", type=int, default=256, help="Maximum prompts per batch")
-    parser.add_argument("--device", nargs="+", type=int, default=[0], help="Index of devices.")
+    parser.add_argument("--device", nargs="+", type=int, default=[0], help="Index of devices")
     return parser.parse_args()
 
 
