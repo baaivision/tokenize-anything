@@ -30,15 +30,9 @@ class PromptEncoder(nn.Module):
         self.register_buffer("coord_matrix", torch.randn((2, embed_dim // 2)))
         self.img_pos = None
 
-    def to_tensor(self, input):
-        """Convert input to tensor."""
-        if input is None:
-            return input
-        if not isinstance(input, torch.Tensor):
-            input = torch.from_numpy(input)
-        if input.device != self.coord_matrix.device:
-            input = input.to(device=self.coord_matrix.device)
-        return input
+    def as_tensor(self, input):
+        """Convert input into a tensor."""
+        return torch.as_tensor(input, device=self.coord_matrix.device)
 
     def to_points(self, points=None, boxes=None):
         """Convert points or boxes to point prompts."""
@@ -48,14 +42,14 @@ class PromptEncoder(nn.Module):
             else:
                 coords, labels = points[:, :, :2], points[:, :, 2]
             coords = coords.__add__(0.5).__itruediv__(self.img_size[::-1])
-            coords = self.to_tensor(coords.clip(0, 1).astype("float32"))
-            labels = self.to_tensor(labels.astype("int64"))
+            coords = self.as_tensor(coords.clip(0, 1).astype("float32"))
+            labels = self.as_tensor(labels.astype("int64"))
             return coords, labels
         if boxes is not None:
             coords = boxes.reshape((-1, 2, 2))
             coords = coords.__add__(0.5).__itruediv__(self.img_size[::-1])
-            coords = self.to_tensor(coords.clip(0, 1).astype("float32"))
-            labels = self.to_tensor(self.corner_labels)
+            coords = self.as_tensor(coords.clip(0, 1).astype("float32"))
+            labels = self.as_tensor(self.corner_labels)
             return coords, labels
         return None
 
@@ -79,7 +73,7 @@ class PromptEncoder(nn.Module):
         grid = torch.ones(*grid_size, dtype=torch.float32)
         y = grid.cumsum(dim=0).sub_(0.5).div_(grid_size[0])
         x = grid.cumsum(dim=1).sub_(0.5).div_(grid_size[1])
-        coords = self.to_tensor(torch.stack([x, y], dim=-1))
+        coords = self.as_tensor(torch.stack([x, y], dim=-1))
         return self.encode_coords(coords)
 
     def forward(self, inputs):

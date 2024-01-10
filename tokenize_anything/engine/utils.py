@@ -55,12 +55,10 @@ def get_device(index):
 
 def get_param_groups(module, layer_lr_decay=1.0):
     """Separate parameters into groups."""
-    memo, groups, inner = {}, collections.OrderedDict(), module
-    if isinstance(module, torch.nn.parallel.DistributedDataParallel):
-        inner = module.module
+    memo, groups = {}, collections.OrderedDict()
     lr_scale_getter = None
-    if layer_lr_decay < 1.0 and hasattr(inner.image_encoder, "get_lr_scale"):
-        lr_scale_getter = functools.partial(inner.image_encoder.get_lr_scale, decay=layer_lr_decay)
+    if layer_lr_decay < 1.0 and hasattr(module.image_encoder, "get_lr_scale"):
+        lr_scale_getter = functools.partial(module.image_encoder.get_lr_scale, decay=layer_lr_decay)
     for name, param in module.named_parameters():
         if not param.requires_grad:
             continue
@@ -88,7 +86,7 @@ def load_weights(module, weights_file, prefix_removed="", strict=True):
         with open(weights_file, "rb") as f:
             state_dict = pickle.load(f)
             for k, v in state_dict.items():
-                state_dict[k] = torch.from_numpy(v) if isinstance(v, np.ndarray) else v
+                state_dict[k] = torch.as_tensor(v)
     else:
         state_dict = torch.load(weights_file)
     if prefix_removed:

@@ -45,13 +45,15 @@ class ImageTokenizer(nn.Module):
         self.register_buffer("pixel_mean", torch.Tensor(pixel_mean))
         self.register_buffer("pixel_rsig", torch.Tensor(pixel_std).reciprocal_())
 
-    def get_inputs(self, inputs):
+    def get_inputs(self, inputs, dtype=None):
         """Return the model inputs.
 
         Parameters
         ----------
         inputs : dict
             The initial inputs.
+        dtype : torch.dtype, optional
+            The optional input dtype.
 
         Returns
         -------
@@ -59,13 +61,10 @@ class ImageTokenizer(nn.Module):
             The model inputs.
 
         """
-        if not isinstance(inputs["img"], torch.Tensor):
-            inputs["img"] = torch.from_numpy(inputs["img"])
-        if inputs["img"].device != self.pixel_mean.device:
-            inputs["img"] = inputs["img"].to(device=self.pixel_mean.device)
-        inputs["img"] = inputs["img"].to(dtype=self.pixel_mean.dtype)
-        inputs["img"] = inputs["img"].sub(self.pixel_mean).mul_(self.pixel_rsig)
-        inputs["img"] = inputs["img"].permute(0, 3, 1, 2)
+        img_dtype, img_device = self.pixel_mean.dtype, self.pixel_mean.device
+        inputs["img"] = torch.as_tensor(inputs["img"], dtype=img_dtype, device=img_device)
+        inputs["img"] = inputs["img"].sub(self.pixel_mean).mul_(self.pixel_rsig).permute(0, 3, 1, 2)
+        inputs["img"] = inputs["img"].to(dtype=dtype) if dtype else inputs["img"]
         return inputs
 
     def get_features(self, inputs):
@@ -185,7 +184,7 @@ class ImageTokenizer(nn.Module):
         eos_reached = np.array([False] * tokens.shape[0])
         for cur_pos in range(1, max_gen_len):
             decode_seq_len = cur_pos - prev_pos
-            x = torch.from_numpy(tokens[:, prev_pos:cur_pos]).to(device=prompts.device)
+            x = torch.as_tensor(tokens[:, prev_pos:cur_pos], device=prompts.device)
             logits = self.text_decoder.transformer(prompts, x, prev_pos)
             next_logits = logits[: x.size(0), decode_seq_len - 1]
             if temperature > 0:

@@ -18,7 +18,6 @@
 from functools import partial
 import pickle
 
-import numpy as np
 import torch
 
 from tokenize_anything.modeling import ConceptProjector
@@ -45,7 +44,7 @@ def load_weights(module, weights_file, strict=True):
         with open(weights_file, "rb") as f:
             state_dict = pickle.load(f)
             for k, v in state_dict.items():
-                state_dict[k] = torch.from_numpy(v) if isinstance(v, np.ndarray) else v
+                state_dict[k] = torch.as_tensor(v)
     else:
         state_dict = torch.load(weights_file)
     module.load_state_dict(state_dict, strict=strict)
