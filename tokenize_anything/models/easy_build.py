@@ -46,7 +46,7 @@ def load_weights(module, weights_file, strict=True):
             for k, v in state_dict.items():
                 state_dict[k] = torch.as_tensor(v)
     else:
-        state_dict = torch.load(weights_file)
+        state_dict = torch.load(weights_file, map_location="cpu")
     module.load_state_dict(state_dict, strict=strict)
 
 
@@ -67,21 +67,21 @@ def vit_encoder(depth, embed_dim, num_heads, out_dim, image_size):
 def image_tokenizer(image_encoder, checkpoint=None, device=0, dtype="float16", **kwargs):
     """Build an image tokenizer."""
     image_size = kwargs.get("image_size", 1024)
-    prompt_embed_dim = kwargs.get("prompt_embed_dim", 256)
+    image_embed_dim = kwargs.get("image_embed_dim", 256)
     sem_embed_dim = kwargs.get("sem_embed_dim", 1024)
     text_embed_dim = kwargs.get("text_embed_dim", 512)
     text_decoder_depth = kwargs.get("text_decoder_depth", 12)
     text_seq_len = kwargs.get("text_seq_len", 40)
     text_tokenizer = TextTokenizer()
     model = ImageTokenizer(
-        image_encoder=image_encoder(out_dim=prompt_embed_dim, image_size=image_size),
-        prompt_encoder=PromptEncoder(embed_dim=prompt_embed_dim, image_size=image_size),
+        image_encoder=image_encoder(out_dim=image_embed_dim, image_size=image_size),
+        prompt_encoder=PromptEncoder(embed_dim=image_embed_dim, image_size=image_size),
         image_decoder=ImageDecoder(
-            depth=2,
-            embed_dim=prompt_embed_dim,
-            num_heads=prompt_embed_dim // 32,
-            num_mask_tokens=4,
+            embed_dim=image_embed_dim,
+            num_heads=image_embed_dim // 32,
             sem_embed_dim=sem_embed_dim,
+            depth=2,
+            num_mask_tokens=4,
         ),
         text_tokenizer=text_tokenizer,
         concept_projector=ConceptProjector(),
@@ -89,10 +89,10 @@ def image_tokenizer(image_encoder, checkpoint=None, device=0, dtype="float16", *
             depth=text_decoder_depth,
             embed_dim=text_embed_dim,
             num_heads=text_embed_dim // 64,
-            mlp_ratio=4,
-            prompt_embed_dim=prompt_embed_dim,
+            prompt_embed_dim=image_embed_dim,
             max_seq_len=text_seq_len,
             vocab_size=text_tokenizer.n_words,
+            mlp_ratio=4,
         ),
     )
     load_weights(model, checkpoint)

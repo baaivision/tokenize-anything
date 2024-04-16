@@ -100,7 +100,7 @@ class Predictor(object):
         data = collections.defaultdict(list)
         for (points,) in self.batch_iterator(box_points):
             outputs = self.model.get_outputs(dict(**inputs, **{"points": points}))
-            data["texts"].append(self.model.generate_text(outputs["sem_tokens"][:, 0:1]))
+            data["texts"].append(self.model.generate_text(outputs["sem_tokens"][:, 0]))
         self.timers["im_process"].toc(n=len(imgs))
         outputs = {"captions": np.concatenate(data["texts"])}
         return [outputs]

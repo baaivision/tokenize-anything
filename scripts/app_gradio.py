@@ -93,7 +93,7 @@ class Predictor(object):
         concepts, scores = self.model.predict_concept(outputs["sem_embeds"][mask_index])
         concepts, scores = [x.reshape(batch_shape) for x in (concepts, scores)]
         # Generate captions.
-        sem_tokens = outputs["sem_tokens"][mask_index].unsqueeze_(1)
+        sem_tokens = outputs["sem_tokens"][mask_index]
         captions = self.model.generate_text(sem_tokens).reshape(batch_shape)
         # Postprocess results.
         results = []
@@ -155,7 +155,7 @@ def build_gradio_app(queues, command):
              #anno-img .mask.active {opacity: 0.7}"""
 
     def get_click_examples():
-        assets_dir = os.path.join(os.path.dirname(__file__), "assets")
+        assets_dir = os.path.join(os.path.dirname(__file__), "../assets")
         app_images = list(filter(lambda x: x.startswith("app_image"), os.listdir(assets_dir)))
         app_images.sort()
         return [{"image": os.path.join(assets_dir, x)} for x in app_images]

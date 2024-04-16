@@ -31,12 +31,12 @@ class ConceptProjector(nn.Module):
 
     def reset_weights(self, src_weights=None, tgt_weights=None):
         """Reset the normalized projection weights."""
-        if src_weights is not None:
+        if src_weights:
             with open(src_weights, "rb") as f:
                 self.src_weights, self.concepts = pickle.load(f)
                 self.src_weights = torch.from_numpy(self.src_weights)
                 self.concepts = np.array(self.concepts)
-        if tgt_weights is not None:
+        if tgt_weights:
             with open(tgt_weights, "rb") as f:
                 self.tgt_weights, self.concepts = pickle.load(f)
                 self.tgt_weights = torch.from_numpy(self.tgt_weights)

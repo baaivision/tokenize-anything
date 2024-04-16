@@ -26,7 +26,8 @@ def init_cross_conv(blocks):
         if isinstance(m, torch.nn.Conv2d):
             torch.nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
     for blk in blocks:
-        torch.nn.init.constant_(blk.norm3.weight, 0)
+        if hasattr(blk, "norm3") and hasattr(blk.norm3, "weight"):
+            torch.nn.init.zeros_(blk.norm3.weight)
 
 
 def set_dropout(module, dropout):

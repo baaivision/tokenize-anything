@@ -50,13 +50,12 @@ class Attention(nn.Module):
 
     def __init__(self, dim=256, num_heads=8, attn_ratio=1):
         super(Attention, self).__init__()
-        qkv_dim = int(dim * attn_ratio)
-        self.num_heads = num_heads
-        self.head_dim = qkv_dim // num_heads
-        self.q_proj = nn.Linear(dim, qkv_dim)
-        self.k_proj = nn.Linear(dim, qkv_dim)
-        self.v_proj = nn.Linear(dim, qkv_dim)
-        self.proj = nn.Linear(qkv_dim, dim)
+        self.num_heads = num_heads or dim // 64
+        self.head_dim = int(dim * attn_ratio) // self.num_heads
+        self.q_proj = nn.Linear(dim, self.num_heads * self.head_dim)
+        self.k_proj = nn.Linear(dim, self.num_heads * self.head_dim)
+        self.v_proj = nn.Linear(dim, self.num_heads * self.head_dim)
+        self.proj = nn.Linear(self.num_heads * self.head_dim, dim)
         self.scale = self.head_dim**-0.5
 
     def forward(self, q, k, v):
@@ -100,8 +99,7 @@ class Block(nn.Module):
         q, k = query + query_pos, key + key_pos
         query = self.norm2(self.dropout(self.cross_attn_token_to_image(q, k, key)).add_(query))
         query = self.norm3(self.dropout(self.mlp(query)).add_(query))
-        q = query + query_pos
-        key = self.norm4(self.cross_attn_image_to_token(k, q, query).add_(key))
+        key = self.norm4(self.cross_attn_image_to_token(k, query + query_pos, query).add_(key))
         return query, key
 
 
@@ -137,8 +135,7 @@ class Transformer(nn.Module):
         for blk in self.blocks:
             query, key = blk(query, key, query_pos, key_pos)
         q, k = query + query_pos, key + key_pos
-        query = self.dropout(self.final_attn_token_to_image(q, k, key)).add_(query)
-        query = self.norm(query)
+        query = self.norm(self.dropout(self.final_attn_token_to_image(q, k, key)).add_(query))
         return query, key
 
 
@@ -164,10 +161,10 @@ class ImageDecoder(nn.Module):
         super(ImageDecoder, self).__init__()
         self.embed_dim = embed_dim
         self.num_mask_tokens = num_mask_tokens
-        self.transformer = Transformer(embed_dim, num_heads=num_heads, depth=depth)
+        self.transformer = Transformer(embed_dim, num_heads, depth=depth)
         self.iou_token = nn.Embedding(1, embed_dim)
-        self.sem_tokens = nn.Embedding(self.num_mask_tokens, embed_dim)
-        self.mask_tokens = nn.Embedding(self.num_mask_tokens, embed_dim)
+        self.sem_tokens = nn.Embedding(num_mask_tokens, embed_dim)
+        self.mask_tokens = nn.Embedding(num_mask_tokens, embed_dim)
         self.output_conv = nn.Sequential(
             nn.ConvTranspose2d(embed_dim, embed_dim // 4, 2, 2),
             TransposedLayerNorm(embed_dim // 4),
@@ -178,8 +175,8 @@ class ImageDecoder(nn.Module):
         self.mask_pred = nn.ModuleList(
             Predictor(embed_dim, embed_dim // 8) for _ in range(num_mask_tokens)
         )
-        self.iou_pred = Predictor(embed_dim, self.num_mask_tokens)
-        self.sem_pred = Predictor(embed_dim, sem_embed_dim, 1024)
+        self.iou_pred = Predictor(embed_dim, num_mask_tokens)
+        self.sem_pred = Predictor(embed_dim, sem_embed_dim, sem_embed_dim)
 
     def get_outputs(self, inputs):
         img_embeds = inputs["img_embeds"]
@@ -201,18 +198,17 @@ class ImageDecoder(nn.Module):
         key = key.transpose(1, 2).view((-1, self.embed_dim) + img_embed_size)
         mask_embeds = self.output_conv(key).flatten(2)
         # Unpack query.
-        tokens = query[:, :num_tokens].unbind(dim=1)
-        iou_tokens = tokens[num_tokens - self.num_mask_tokens - 1]
-        mask_tokens = tokens[num_tokens - self.num_mask_tokens :]
-        sem_tokens = tokens[: self.num_mask_tokens]
+        sem_tokens = query[:, : self.num_mask_tokens]
+        sam_tokens = query[:, self.num_mask_tokens : num_tokens].unbind(1)
+        iou_tokens, mask_tokens = sam_tokens[0], sam_tokens[1:]
         # Predict.
         mask_pred = [f(x) for f, x in zip(self.mask_pred, mask_tokens)]
         mask_pred = torch.stack(mask_pred, dim=1) @ mask_embeds
         mask_pred_size = list(4 * embed_size for embed_size in img_embed_size)
         mask_pred = mask_pred.view([-1, self.num_mask_tokens] + mask_pred_size)
         outputs = {"iou_pred": self.iou_pred(iou_tokens), "mask_pred": mask_pred}
-        outputs["sem_tokens"] = torch.stack(sem_tokens, dim=1)
-        outputs["sem_embeds"] = self.sem_pred(outputs["sem_tokens"])
+        outputs["sem_tokens"] = sem_tokens.unsqueeze_(2)
+        outputs["sem_embeds"] = self.sem_pred(outputs["sem_tokens"].flatten(2))
         return outputs
 
     def forward(self, inputs):

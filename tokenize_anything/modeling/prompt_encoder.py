@@ -24,11 +24,10 @@ class PromptEncoder(nn.Module):
 
     def __init__(self, embed_dim, image_size):
         super(PromptEncoder, self).__init__()
-        self.img_size = [image_size] * 2
         self.point_embed = nn.Embedding(5, embed_dim)  # [bg, fg, lt, rb, pad]
         self.corner_labels = torch.tensor([[2, 3]], dtype=torch.int64)
         self.register_buffer("coord_matrix", torch.randn((2, embed_dim // 2)))
-        self.img_pos = None
+        self.img_pos, self.img_size = None, [image_size] * 2
 
     def as_tensor(self, input):
         """Convert input into a tensor."""

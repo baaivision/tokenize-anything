@@ -20,6 +20,7 @@ import functools
 import pickle
 
 import torch
+from torch import nn
 import numpy as np
 
 from tokenize_anything.utils import logging
@@ -33,11 +34,11 @@ def count_params(module, trainable=True, unit="M"):
     return sum(counts) / {"M": 1e6, "B": 1e9}[unit]
 
 
-def freeze_module(module):
+def freeze_module(module, trainable=False):
     """Freeze parameters of given module."""
-    module.eval()
+    module.eval() if not trainable else module.train()
     for param in module.parameters():
-        param.requires_grad = False
+        param.requires_grad = trainable
 
 
 def get_device(index):
@@ -53,28 +54,27 @@ def get_device(index):
     return torch.device("cpu")
 
 
-def get_param_groups(module, layer_lr_decay=1.0):
+def get_param_groups(model, layer_lr_decay=1.0):
     """Separate parameters into groups."""
-    memo, groups = {}, collections.OrderedDict()
-    lr_scale_getter = None
-    if layer_lr_decay < 1.0 and hasattr(module.image_encoder, "get_lr_scale"):
-        lr_scale_getter = functools.partial(module.image_encoder.get_lr_scale, decay=layer_lr_decay)
-    for name, param in module.named_parameters():
-        if not param.requires_grad:
-            continue
-        attrs = collections.OrderedDict()
-        if lr_scale_getter:
-            attrs["lr_scale"] = lr_scale_getter(name)
-        memo[name] = param.shape
-        no_weight_decay = not (name.endswith("weight") and param.dim() > 1)
-        no_weight_decay = getattr(param, "no_weight_decay", no_weight_decay)
-        if no_weight_decay:
-            attrs["weight_decay"] = 0
-        group_name = "/".join(["%s:%s" % (v[0], v[1]) for v in list(attrs.items())])
-        if group_name not in groups:
-            groups[group_name] = {"params": []}
-            groups[group_name].update(attrs)
-        groups[group_name]["params"].append(param)
+    memo, groups, lr_scale_getter = set(), collections.OrderedDict(), None
+    if layer_lr_decay < 1.0 and hasattr(model.image_encoder, "get_lr_scale"):
+        lr_scale_getter = functools.partial(model.image_encoder.get_lr_scale, decay=layer_lr_decay)
+    norm_types = (nn.BatchNorm2d, nn.GroupNorm, nn.SyncBatchNorm, nn.LayerNorm)
+    for module_name, module in model.named_modules():
+        for param_name, param in module.named_parameters(recurse=False):
+            if not param.requires_grad or param in memo:
+                continue
+            memo.add(param)
+            attrs = collections.OrderedDict()
+            if lr_scale_getter:
+                attrs["lr_scale"] = lr_scale_getter(f"{module_name}.{param_name}")
+            if hasattr(param, "lr_scale"):
+                attrs["lr_scale"] = param.lr_scale
+            if getattr(param, "no_weight_decay", False) or isinstance(module, norm_types):
+                attrs["weight_decay"] = 0
+            group_name = "/".join(["%s:%s" % (v[0], v[1]) for v in list(attrs.items())])
+            groups[group_name] = groups.get(group_name, {**attrs, **{"params": []}})
+            groups[group_name]["params"].append(param)
     return list(groups.values())
 
 
@@ -114,15 +114,14 @@ def synchronize_device(device):
         getattr(torch, device.type).synchronize(device)
 
 
-def create_ddp_group(cfg, ranks=None, devices=None, num_nodes=1):
+def create_ddp_group(cfg, ranks=None, devices=None):
     """Create group for data parallelism."""
     if not torch.distributed.is_initialized():
         torch.distributed.init_process_group(backend="nccl")
     world_rank = torch.distributed.get_rank()
     ranks = ranks if ranks else [i for i in range(cfg.NUM_GPUS)]
     logging.set_root(world_rank == ranks[0])
-    devices_per_node = len(ranks) // num_nodes
-    devices = devices if devices else [i % devices_per_node for i in range(len(ranks))]
+    devices = devices if devices else [i % 8 for i in range(len(ranks))]
     cfg.GPU_ID = devices[world_rank]
     torch.cuda.set_device(cfg.GPU_ID)
     global GLOBAL_DDP_GROUP
@@ -149,3 +148,22 @@ def apply_ddp_group(module):
     if ddp_group is None:
         return module
     return torch.nn.parallel.DistributedDataParallel(module, process_group=ddp_group)
+
+
+def apply_deepspeed(module, optimizer, ds_config=None, log_lvl="WARNING"):
+    """Apply deepspeed parallelism for given module."""
+    if not ds_config:
+        return None
+    import deepspeed
+
+    deepspeed.logger.setLevel(log_lvl)
+    ds_model = deepspeed.initialize(None, module, optimizer, config=ds_config)[0]
+    # Rollback the downcasting batchnorm stats in deepspeed initialization.
+    # torch>=2.1 is required, which fixes PR#98332 for 16bit BN weight/bias.
+    bn_types = (nn.BatchNorm1d, nn.BatchNorm2d, nn.SyncBatchNorm)
+    for m in filter(lambda m: isinstance(m, bn_types), module.modules()):
+        for key, buf in m._buffers.items():
+            if buf is not None and "running" in key:
+                num = 1.0 if "var" in key else 0.0
+                m._buffers[key] = buf.float().nan_to_num(num, num, num)
+    return ds_model
