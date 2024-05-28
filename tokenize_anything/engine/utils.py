@@ -88,7 +88,7 @@ def load_weights(module, weights_file, prefix_removed="", strict=True):
             for k, v in state_dict.items():
                 state_dict[k] = torch.as_tensor(v)
     else:
-        state_dict = torch.load(weights_file)
+        state_dict = torch.load(weights_file, map_location="cpu")
     if prefix_removed:
         new_state_dict = type(state_dict)()
         for k in list(state_dict.keys()):
@@ -142,28 +142,33 @@ def get_ddp_rank():
     return torch.distributed.get_rank(ddp_group)
 
 
-def apply_ddp_group(module):
-    """Apply data parallelism group for given module."""
+def apply_ddp(module):
+    """Apply distributed data parallelism for given module."""
     ddp_group = get_ddp_group()
     if ddp_group is None:
         return module
     return torch.nn.parallel.DistributedDataParallel(module, process_group=ddp_group)
 
 
-def apply_deepspeed(module, optimizer, ds_config=None, log_lvl="WARNING"):
+def apply_deepspeed(model, optimizer, ds_config=None, log_lvl="WARNING"):
     """Apply deepspeed parallelism for given module."""
     if not ds_config:
         return None
     import deepspeed
 
-    deepspeed.logger.setLevel(log_lvl)
-    ds_model = deepspeed.initialize(None, module, optimizer, config=ds_config)[0]
-    # Rollback the downcasting batchnorm stats in deepspeed initialization.
-    # torch>=2.1 is required, which fixes PR#98332 for 16bit BN weight/bias.
-    bn_types = (nn.BatchNorm1d, nn.BatchNorm2d, nn.SyncBatchNorm)
-    for m in filter(lambda m: isinstance(m, bn_types), module.modules()):
+    # Store the float32 batchnorm stats to avoid post-upcasting.
+    bn_types, bn_buffers = (nn.BatchNorm1d, nn.BatchNorm2d, nn.SyncBatchNorm), {}
+    for m in filter(lambda m: isinstance(m, bn_types), model.modules()):
         for key, buf in m._buffers.items():
             if buf is not None and "running" in key:
-                num = 1.0 if "var" in key else 0.0
-                m._buffers[key] = buf.float().nan_to_num(num, num, num)
+                bn_buffers["{}_{}".format(id(m), key)] = m._buffers[key]
+    deepspeed.logger.setLevel(log_lvl)
+    ds_model = deepspeed.initialize(None, model, optimizer, config=ds_config)[0]
+    # Revert the downcasting batchnorm stats in deepspeed initialization.
+    # torch>=2.1 is required, which fixes PR#98332 for 16bit BN weight/bias.
+    for m in filter(lambda m: isinstance(m, bn_types), model.modules()):
+        for key, buf in m._buffers.items():
+            if buf is not None and "running" in key:
+                m._buffers[key] = bn_buffers["{}_{}".format(id(m), key)]
+                assert m._buffers[key].dtype == torch.float32
     return ds_model

@@ -68,6 +68,8 @@ See [Concept Guide](notebooks/concept.ipynb).
 
 ### Evaluation
 
+See [Evaluation Guide for TAP-H](notebooks/evaluation_tap_vit_h_v1_1.ipynb).
+
 See [Evaluation Guide for TAP-L](notebooks/evaluation_tap_vit_l_v1_1.ipynb).
 
 See [Evaluation Guide for TAP-B](notebooks/evaluation_tap_vit_b_v1_1.ipynb).
@@ -76,20 +78,28 @@ See [Evaluation Guide for TAP-B](notebooks/evaluation_tap_vit_b_v1_1.ipynb).
 
 ### Model weights
 
-Two versions of the model are available with different image encoders.
-
-| Model | Description | Schedule | MD5 | Weights |
-| ----- | ------------| ------ | ----| ------ |
-| **tap_vit_l** | ViT-L TAP v1.1 model | (100% SA-1B, 180k), (VG, 50ep) | c1d41f | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_l_v1_1.pkl) |
-| **tap_vit_b** | ViT-B TAP v1.1 model | (100% SA-1B, 180k), (VG, 50ep) | 707f80 | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_b_v1_1.pkl) |
-| **tap_vit_l** | ViT-L TAP v1.0 model | (50% SA-1B, 90k), (VG, 25ep) | 03f8ec | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_l_v1_0.pkl) |
-| **tap_vit_b** | ViT-B TAP v1.0 model | (50% SA-1B, 90k), (VG, 25ep) | b45cbf | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_b_v1_0.pkl) |
-
 #### V1.1 Release Notes
 
+- Three versions of the model are available with different image encoders.
 - Use a longer pre-training and fine-tuning schedule (improved segmentation and caption performance).
 - Apply weight decay for all bias parameters (avoid FP16 overflow in QK matmul).
 - Sample point prompts from predicted mask instead of GT box during VG training.
+
+| Model | Description | Schedule | MD5 | Weights |
+| ----- | ------------| ------ | ----| ------ |
+| **tap_vit_h** | ViT-H TAP v1.1 model | (100% SA-1B, 180k), (VG, 50ep) | 4bdfb9 | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_h_v1_1.pkl) |
+| **tap_vit_l** | ViT-L TAP v1.1 model | (100% SA-1B, 180k), (VG, 50ep) | c1d41f | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_l_v1_1.pkl) |
+| **tap_vit_b** | ViT-B TAP v1.1 model | (100% SA-1B, 180k), (VG, 50ep) | 707f80 | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_b_v1_1.pkl) |
+
+#### V1.0 Release Notes
+
+- Two versions of the model are available with different image encoders.
+- Original paper results.
+
+| Model | Description | Schedule | MD5 | Weights |
+| ----- | ------------| ------ | ----| ------ |
+| **tap_vit_l** | ViT-L TAP v1.0 model | (50% SA-1B, 90k), (VG, 25ep) | 03f8ec | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_l_v1_0.pkl) |
+| **tap_vit_b** | ViT-B TAP v1.0 model | (50% SA-1B, 90k), (VG, 25ep) | b45cbf | [🤗 HF link](https://huggingface.co/BAAI/tokenize-anything/blob/main/models/tap_vit_b_v1_0.pkl) |
 
 ### Concept weights
 

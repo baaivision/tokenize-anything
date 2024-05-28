@@ -106,8 +106,10 @@ def image_tokenizer(image_encoder, checkpoint=None, device=0, dtype="float16", *
 
 vit_b_encoder = partial(vit_encoder, depth=12, embed_dim=768, num_heads=12)
 vit_l_encoder = partial(vit_encoder, depth=24, embed_dim=1024, num_heads=16)
+vit_h_encoder = partial(vit_encoder, depth=32, embed_dim=1280, num_heads=16)
 
 model_registry = {
     "tap_vit_b": partial(image_tokenizer, image_encoder=vit_b_encoder),
     "tap_vit_l": partial(image_tokenizer, image_encoder=vit_l_encoder),
+    "tap_vit_h": partial(image_tokenizer, image_encoder=vit_h_encoder),
 }
