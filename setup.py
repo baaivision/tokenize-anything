@@ -113,7 +113,6 @@ setuptools.setup(
         "gradio-image-prompter",
         "sentencepiece",
         "torch",
-        "flash-attn",
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",

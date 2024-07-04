@@ -62,18 +62,14 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
-        self.scale = self.head_dim**-0.5
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.proj = nn.Linear(dim, dim)
-        self.rel_pos_embed = nn.Identity()
+        self.rel_pos_embed: RelPosEmbed = None
 
     def forward(self, x):
         qkv_shape = (-1, x.size(1), 3, self.num_heads, self.head_dim)
-        qkv = self.qkv(x).reshape(qkv_shape).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv.unbind(dim=0)
-        attn = q @ k.transpose(-2, -1).mul(self.scale)
-        attn = self.rel_pos_embed(attn)
-        o = nn.functional.softmax(attn, dim=-1) @ v
+        q, k, v = self.qkv(x).view(qkv_shape).permute(2, 0, 3, 1, 4).unbind(dim=0)
+        o = nn.functional.scaled_dot_product_attention(q, k, v, self.rel_pos_embed.get_bias())
         return self.proj(o.transpose(1, 2).flatten(2))
 
 

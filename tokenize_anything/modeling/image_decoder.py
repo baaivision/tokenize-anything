@@ -56,13 +56,16 @@ class Attention(nn.Module):
         self.k_proj = nn.Linear(dim, self.num_heads * self.head_dim)
         self.v_proj = nn.Linear(dim, self.num_heads * self.head_dim)
         self.proj = nn.Linear(self.num_heads * self.head_dim, dim)
-        self.scale = self.head_dim**-0.5
 
     def forward(self, q, k, v):
-        q = self.q_proj(q).view((-1, q.size(1), self.num_heads, self.head_dim))
-        k = self.k_proj(k).view((-1, k.size(1), self.num_heads, self.head_dim))
-        v = self.v_proj(v).view((-1, v.size(1), self.num_heads, self.head_dim))
-        o = flash_attn_func(q, k, v, softmax_scale=self.scale)
+        q = self.q_proj(q).view(-1, q.size(1), self.num_heads, self.head_dim)
+        k = self.k_proj(k).view(-1, k.size(1), self.num_heads, self.head_dim)
+        v = self.v_proj(v).view(-1, v.size(1), self.num_heads, self.head_dim)
+        if flash_attn_func is None or q.device.type != "cuda":
+            q, k, v = (_.transpose(1, 2) for _ in (q, k, v))
+            o = nn.functional.scaled_dot_product_attention(q, k, v).transpose(1, 2)
+        else:
+            o = flash_attn_func(q, k, v)
         return self.proj(o.flatten(2))
 
 

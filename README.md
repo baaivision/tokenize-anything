@@ -18,9 +18,9 @@ We present **T**okenize **A**nything via **P**rompting, a unified and promptable
 
 ### Preliminaries
 
-``torch``
+``torch`` >= 2.1
 
-``flash-attn`` >= 2.3.3 (Install the pre-built wheel distribution from [URL](https://github.com/Dao-AILab/flash-attention/releases))
+``flash-attn`` >= 2.3.3 (for TextGeneration)
 
 ``gradio-image-prompter`` (for GradioApp, Install from [URL](https://github.com/PhyscalX/gradio-image-prompter))
 
