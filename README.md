@@ -2,7 +2,7 @@
 
 <h1>Tokenize Anything via Prompting</h1>
 
-[Ting Pan](https://github.com/PhyscalX/)<sup>1,2*</sup>, &nbsp; [Lulu Tang](https://github.com/lulutang0608)<sup>2*</sup>, &nbsp; [Xinlong Wang](https://www.xloong.wang/)<sup>2¶</sup>, &nbsp; [Shiguang Shan](https://scholar.google.com/citations?user=Vkzd7MIAAAAJ&hl=en)<sup>1</sup>
+[Ting Pan](https://github.com/PhyscalX/)<sup>1,2*</sup>, &nbsp; [Lulu Tang]([https://github.com/lulutang0608](https://scholar.google.com/citations?authuser=1&user=o2fG4xUAAAAJ))<sup>2*</sup>, &nbsp; [Xinlong Wang](https://www.xloong.wang/)<sup>2¶</sup>, &nbsp; [Shiguang Shan](https://scholar.google.com/citations?user=Vkzd7MIAAAAJ&hl=en)<sup>1</sup>
 
 <sup>1</sup>[ICT-CAS](http://english.ict.cas.cn/), &nbsp; <sup>2</sup>[BAAI](https://www.baai.ac.cn/english.html)<br>
 <sup>*</sup> Equal Contribution, <sup>¶</sup>Project Lead
